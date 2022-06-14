@@ -1,0 +1,3 @@
+true if ."hello" else ."goodbye" then . 
+5 10 >= 20 if 2 * else 3 + then . 
+2 dup 5 > if 20 < if ."between5ad20" else ."20orMore" then else ."atMost5" then .
