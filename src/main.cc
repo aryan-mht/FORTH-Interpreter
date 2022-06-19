@@ -5,11 +5,15 @@ int process(FILE*);
 int process_file(const char*);
 int process_cmd(char*);
 int process_until(const char*, bool);
-void operations();
-void store_def();
-void store_commands(int);
+void operations(); // for all the aithmetic 
+void store_def(); // store user-defined definitions 
+void store_commands(int); // store commands (takes a file descriptor as argument)
+int cleanup(); // removes temp files 
 bool DEBUG = false; 
 bool DEFINING = false; 
+char tmpfilename[100];
+char tmpfiles_array[100][100];
+int file_count = 0;
 
 
 int main(int argc, char *argv[])
@@ -45,7 +49,8 @@ int main(int argc, char *argv[])
 		}
 		opt = -1;
 	}
-	return process(stdin); // after processing the data from file (if -f was entered), continue to process data from stdin. 
+	process(stdin); // after processing the data from file (if -f was entered), continue to process data from stdin. 
+	return cleanup();
 }
 // ======================================
 char cmd[SIZE+1];  // for input
@@ -425,6 +430,7 @@ int process_cmd(char* cmd){
 
 
 	}
+	// remove(tmpfilename);
 	return EXIT_SUCCESS;
 }
 
@@ -458,7 +464,11 @@ int process_until(const char* term, bool exec){
 
 
 void store_def(){
-	// stores things in the dict
+	/**
+	 * @brief This fuction stores user-defined definitions in the dictionary: 
+	 * The name of the user-defined function becomes the name field of the dict. 
+	 * The file address of the tmp file becomes the s field of the data of the dict (dict->data.s)
+	 */
 	datum d;
 	if(!empty()){
 		d = pop();
@@ -466,31 +476,44 @@ void store_def(){
 	if(STRING == d.tag){
 		datum new_entry;
 		
-		dict *dict_elem = new dict; 
-		dict_elem->flag = WORD;
-		char tmpfilename[100];
+		dict *dict_elem = new dict;  // new dict 
+		dict_elem->flag = WORD; // flag of the dict pt WORD
+
+		// store the filename in the variable
 		sprintf(tmpfilename, "tmp/%s.XXXXXX", d.s);
-		new_entry.tag = FLOAT;
+
+		// make a new datum with tag STRING which will store the tmp file address
+		new_entry.tag = STRING; // tag of the datum to be STRING
+
+		// make the file
 		int fd = mkstemp(tmpfilename);
-		unlink(tmpfilename);
-		
-		// strcpy(new_entry.s, tmpfilename);
-		new_entry.f =  fd;
+
+		// add the file in a file array which contains all the temp files created during the program 
+		// this will come handy when doing cleanup of the files 
+		strcpy(tmpfiles_array[file_count], tmpfilename);
+		file_count += 1;	
+
+
+		strcpy(new_entry.s, tmpfilename);  // store the tempfile name in the .s field 
+		// new_entry.f =  fd;
 		strcpy(dict_elem->name, d.s);
-		printf("DICT_ELEM %s\n", dict_elem->name);
 		dict_elem->data = new_entry;
 		// iterate forward
 		dict_elem->next = the_dictionaty;
 		//make the_dictionaty point to the head of the list
 		the_dictionaty = dict_elem;
 		
+		// call this function to store the commands of the definition. 
 		store_commands(fd);
-		// remove (tmpfilename);
 
 	}
 }
 
 void store_commands(int fd){
+	/**
+	 * @brief Stores the body of the definition from (not including : and up to but not including ;)
+	 * Opens the temp file for writing and writes the command body in it 
+	 */
 	while(!feof(stdin)){
 		if (1==fscanf(stdin, "%s", cmd)){
 			if(0!=strcmp(cmd, ";")){
@@ -502,4 +525,15 @@ void store_commands(int fd){
 			}
 		}
 	}
+}
+
+
+int cleanup(){
+	/**this function deletes all the temp files crated during the execution of the program
+	*/
+	for(int i = 0; i < file_count; i++){
+		remove(tmpfiles_array[i]);
+	}
+	return EXIT_SUCCESS;
+	
 }

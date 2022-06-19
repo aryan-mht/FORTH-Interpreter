@@ -63,10 +63,10 @@ bool dict_retrieve(char input[SIZE+1]){
                 return true;
             }
             else if(WORD == iterate->flag){
-                printf("FD INSIDE RETRIEVE: %d\n", iterate->data.f);
-                FILE* file = fdopen(iterate->data.f, "r");
+                FILE* file = fopen(iterate->data.s, "r");
+                // printf("OPENING");
                 process(file);
-                close(iterate->data.f);
+                fclose(file);
                 return true;
 
             }
