@@ -1,0 +1,5 @@
+."PI" 3.14 constant 
+."area" : dup * PI ; 
+."circum" : 2 * PI * ;
+10 area . 
+10 circum .  
