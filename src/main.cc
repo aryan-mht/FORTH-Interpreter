@@ -6,7 +6,10 @@ int process_file(const char*);
 int process_cmd(char*);
 int process_until(const char*, bool);
 void operations();
+void store_def();
+void store_commands(int);
 bool DEBUG = false; 
+bool DEFINING = false; 
 
 
 int main(int argc, char *argv[])
@@ -361,10 +364,14 @@ int process_cmd(char* cmd){
 		else if ((strcmp(cmd, "+") == 0 || strcmp(cmd, "-") == 0) || strcmp(cmd, "*") == 0 || strcmp(cmd, "/") == 0 || strcmp(cmd, "^") == 0 || strcmp(cmd, "fix") == 0){
 			operations(); // call the operation function to perform operations
 		}
-		else if(dict_retrieve(cmd)){
+		// else if(0 ==lookup_usrdef(cmd)){
+		// 	printf("PRINTING");
+		// }
+		else if(dict_retrieve(cmd)){  
 			; // do nothing as the function dict_retrieve will look up the name and if found, it will push the value of the dict on to the stack
 
 		}
+
 		else if(0==strcmp("if", cmd)){
 			if(!empty()){
 				datum d = pop();
@@ -382,6 +389,11 @@ int process_cmd(char* cmd){
 			;  // this is to make sure if the user typed something wrong on the top of the stack 
 			// that it does not print "Unrecognised op 'else' or 'then'"
 		}
+		else if(0==strcmp(":", cmd)){
+			store_def();
+		}
+
+		
 		else if (strcmp(cmd, ".")==0)
 		// If the input is .
 		{
@@ -418,6 +430,8 @@ int process_cmd(char* cmd){
 
 
 int process_until(const char* term, bool exec){
+	// this function process the commands until it sees the delimiters 
+	// which are going to be "else" or "then"
 	while(!feof(stdin)){
 		if (1==fscanf(stdin, "%s", cmd)){
 			if(0==(strcmp(term, cmd))){
@@ -439,4 +453,53 @@ int process_until(const char* term, bool exec){
 		}
 	}
 	return EXIT_FAILURE;
+}
+
+
+
+void store_def(){
+	// stores things in the dict
+	datum d;
+	if(!empty()){
+		d = pop();
+	}
+	if(STRING == d.tag){
+		datum new_entry;
+		
+		dict *dict_elem = new dict; 
+		dict_elem->flag = WORD;
+		char tmpfilename[100];
+		sprintf(tmpfilename, "tmp/%s.XXXXXX", d.s);
+		new_entry.tag = FLOAT;
+		int fd = mkstemp(tmpfilename);
+		unlink(tmpfilename);
+		
+		// strcpy(new_entry.s, tmpfilename);
+		new_entry.f =  fd;
+		strcpy(dict_elem->name, d.s);
+		printf("DICT_ELEM %s\n", dict_elem->name);
+		dict_elem->data = new_entry;
+		// iterate forward
+		dict_elem->next = the_dictionaty;
+		//make the_dictionaty point to the head of the list
+		the_dictionaty = dict_elem;
+		
+		store_commands(fd);
+		// remove (tmpfilename);
+
+	}
+}
+
+void store_commands(int fd){
+	while(!feof(stdin)){
+		if (1==fscanf(stdin, "%s", cmd)){
+			if(0!=strcmp(cmd, ";")){
+				write(fd, cmd, strlen(cmd));
+				write(fd, " ", strlen(" "));
+			}
+			else{
+				return;
+			}
+		}
+	}
 }

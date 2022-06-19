@@ -4,8 +4,11 @@
 #include <unistd.h>
 #include "stack.h" 
 
+
+
+ 
 // Initializing a dict_tag to identify the dict type
-enum dict_tag {CONSTANT, VARIABLE};
+enum dict_tag {CONSTANT, VARIABLE, WORD};
 
 
 
@@ -16,7 +19,7 @@ struct dict{
     datum data; // the data
     dict *next; // a pointer to the next dictonary 
 };
-// extern dict *the_dictionaty;  // this will point to the 'head' of the dictionaty list
+extern dict *the_dictionaty;  // this will point to the 'head' of the dictionaty list
 
 
 
@@ -25,6 +28,10 @@ void store_const_or_var(char[]);
 bool dict_retrieve(char[]);
 int lookup();
 void set();
+
+int lookup_usrdef(char[]);
+int open_process_file();
+int process(FILE*);
 
 
 

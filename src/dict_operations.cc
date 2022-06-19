@@ -51,20 +51,31 @@ bool dict_retrieve(char input[SIZE+1]){
      */
     for (dict *iterate = the_dictionaty; NULL!=iterate; iterate = iterate->next){
         if(0 ==strcmp(input, iterate->name)){
-            datum push_datum;
-            push_datum.tag = iterate->data.tag;
-            switch(push_datum.tag){
-                case FLOAT: push_datum.f = iterate->data.f; break;
-                case BOOL: push_datum.b = iterate->data.b; break;
-                case STRING: strcpy(push_datum.s, iterate->data.s); break;
+            if(iterate->flag != WORD){
+                datum push_datum;
+                push_datum.tag = iterate->data.tag;
+                switch(push_datum.tag){
+                    case FLOAT: push_datum.f = iterate->data.f; break;
+                    case BOOL: push_datum.b = iterate->data.b; break;
+                    case STRING: strcpy(push_datum.s, iterate->data.s); break;
+                }
+                push(push_datum);
+                return true;
             }
-            push(push_datum);
-            return true;
+            else if(WORD == iterate->flag){
+                printf("FD INSIDE RETRIEVE: %d\n", iterate->data.f);
+                FILE* file = fdopen(iterate->data.f, "r");
+                process(file);
+                close(iterate->data.f);
+                return true;
+
+            }
         }
     }
     return false;
     
 }
+
 
 
 int lookup(){
@@ -152,6 +163,8 @@ void set(){
 
 
 }
+
+
 
 
 
