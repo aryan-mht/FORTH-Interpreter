@@ -1,8 +1,3 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <unistd.h>
-#include <cstring>
 #include "dict.h" 
 
 

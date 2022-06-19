@@ -1,3 +1,11 @@
+// includes for all the files 
+#include <cstdlib>
+#include <cstdio>
+#include <cassert>
+#include <unistd.h>
+#include <string.h>
+#include <cmath>
+
 const int SIZE = 80;
 extern int precision; 
 enum data_type {

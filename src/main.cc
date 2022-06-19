@@ -1,17 +1,14 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
-#include <unistd.h>
-#include <string.h>
-#include <cmath>
 #include "dict.h"
 
 
 int process(FILE*);
+int process_file(const char*);
+int process_cmd(char*);
+int process_until(const char*, bool);
 void operations();
 bool DEBUG = false; 
 
-// TODO: and q2, and free memory, README.md
+
 int main(int argc, char *argv[])
 {
 
@@ -27,12 +24,12 @@ int main(int argc, char *argv[])
 			return EXIT_SUCCESS;
 			break;
 		case 'f': // if f is entered as a command 
-			FILE *f;
+			// FILE *f;
 			for (int i = optind; i < argc; i++){ // optind will be the number of files passed after the -f option
-				printf("ARGC: %d\n",argc);
-				f = fopen(argv[i], "rt"); // store the file pointer in f
-				process(f); // process the data 
-				fclose(f); // close the file				
+				process_file(argv[i]);
+				// f = fopen(argv[i], "rt"); // store the file pointer in f
+				// process(f); // process the data 
+				// fclose(f); // close the file				
 			} 
 			break;
 		case 'd':
@@ -230,7 +227,17 @@ void operations(){
 }
 
 
-
+int process_file(const char* fname){
+	//Opens a file, processes it, and closes it.  
+    FILE* in = fopen(fname, "rt");
+    if (NULL == in){
+        perror(fname);
+        return EXIT_FAILURE;
+    }
+    int r = process(in);
+    fclose(in);
+    return r;
+}
 
 // =====================================
 int process(FILE* file){
@@ -239,141 +246,11 @@ int process(FILE* file){
 	 * or it could be a stdin in which it will take inputs only from the terminal. 
 	 * This is where the processing of the data takes from a file/stdin happens. 
 	 */
-	
-
-	datum input; // a datum which will be manipulated based on what was entered and then will be pushed 
-	
 	while(!feof(file))  
 	{
 		if(fscanf(file,"%s", cmd)!= -1)  // read from file 
 		{
-			float value; 
-			if (sscanf(cmd, "%f", &value) != 0) 
-			{
-				// If the input is float, then change the input.tag to FLOAT and make its value to the input
-				input.tag = FLOAT;
-				input.f = value;		
-				push(input);
-				// if(DEBUG){
-				// 	debug();
-				// }		
-			}
-			else if (strcmp(cmd, "true") == 0)
-			{
-				// If the input is true, then change the input.tag to BOOL and make its value to true
-				input.tag = BOOL;
-				input.b = true;
-				push(input);
-				// if(DEBUG){
-				// 	debug();
-				// }					
-			}
-			else if (strcmp(cmd, "false") ==0)
-			{
-				// If the input is false, then change the input.tag to BOOL and make its value to false
-				input.tag = BOOL;
-				input.b = false;
-				push(input);
-				// if(DEBUG){
-				// 	debug();
-				// }					
-			}
-			else if (cmd[0] == '.' && cmd[1] == '"' && cmd[strlen(cmd)-1] == '"'){
-				// If the input has the first character as . and second character as " and the last character as "
-				// Then that's a string 
-				input.tag = STRING;
-				int START_IDX = 2; 
-				// Call the substring() function that would remove the delimiters and return a datum 
-				push(substring(cmd,START_IDX, strlen(cmd)-2));
-				// if(DEBUG){
-				// 	debug();
-				// }					
-			}
-			else
-			{
-				// If the input is any of the special operations, then 
-				// Simply call the functions for the corrosponding input
-				if ((strcmp(cmd, "rot")==0)){rot();}
-				else if (strcmp(cmd, "dup")==0){dup();}
-				else if(strcmp(cmd, "drop")==0){drop();}
-				else if (strcmp(cmd, "swap")==0){swap();}
-				else if (strcmp(cmd, "substring") ==0){
-					// Since the function substring accepts three arguments, 
-					// Save the three datums by popping them off and providing
-					// the function with the arguments. 
-					datum end = pop();
-					datum start = pop();
-					datum str = pop(); 
-					// The substring function will slice a string and return a datum with a string
-					// that has character from str[start] to str[end] inclusive 
-					push(substring(str.s, start.f, end.f));}
-				// else if cmd matches with any of the known commands, then call the corrosponding function:
-				else if(strcmp(cmd, "space") ==0){push(space());}
-				else if (strcmp(cmd, "newline") ==0){push(newline());}
-				else if (0== strcmp(cmd, "not")){not_op();}
-				else if(0 == strcmp(cmd, "and")){and_op();}
-				else if(0== strcmp(cmd, "or")){or_op();}
-				else if(0== strcmp(cmd, "=")){equality();}
-				else if(0== strcmp(cmd, "<>")){inequality();}
-				else if(0 == strcmp(cmd, "<")){lessThan();}
-				else if(0 == strcmp(cmd, "<=")){lessThanEqual();}
-				else if(0 == strcmp(cmd, ">")){greaterThan();}
-				else if(0 == strcmp(cmd, ">=")){greaterThanEqual();}
-				// if the cmd was constant or variable
-				else if(0 == strcmp(cmd, "constant") || 0 == strcmp(cmd, "variable"))
-				{
-					// first lookup in the dict
-					if(-1 == lookup()) // if not found in the dict
-					{store_const_or_var(cmd);} // store it in the dict
-
-					else if(lookup() == CONSTANT) //if found in the dict to be CONSTANT, print this msg
-					{printf("Constant name previously defined. A Constant cannot be overwritten!\n");}
-					
-					else if (lookup() == VARIABLE) { //if found in the dict to be VARIABLE, print this msg
-						printf("Variable name previously defined. To overwrite the value, use the 'set' operation\n");
-						}
-				}
-				else if(0 == strcmp(cmd, "set")){
-					set(); // call set function
-				} 
-				else if ((strcmp(cmd, "+") == 0 || strcmp(cmd, "-") == 0) || strcmp(cmd, "*") == 0 || strcmp(cmd, "/") == 0 || strcmp(cmd, "^") == 0 || strcmp(cmd, "fix") == 0){
-					operations(); // call the operation function to perform operations
-				}
-				else if(dict_retrieve(cmd)){
-					; // do nothing as the function dict_retrieve will look up the name and if found, it will push the value of the dict on to the stack
-
-				}
-				else if (strcmp(cmd, ".")==0)
-				// If the input is .
-				{
-					if(!empty()){ 
-						
-						datum pop_datum = pop();
-						// Determine the tag of data type on the top of stack
-						switch(pop_datum.tag)
-						{
-							// Print the values correctly for the corrosponding data types. 
-							case BOOL: printf("%s\n", pop_datum.b ? "true" : "false"); break;
-							case FLOAT: printf("%0.*f\n", precision ,pop_datum.f); break;
-							case STRING: printf("%s\n", pop_datum.s); break;
-							default: assert(false); break;
-						}
-					}
-
-					else{
-						printf("Stack Underflow\n"); // if the stack is empty and a . is recognized, print this
-					}
-					
-				}
-				else
-				{
-					// if an unknown command has entered, print this: 
-					printf("USER_ERROR: unrecognized op '%s'\n", cmd);
-				}
-				
-
-
-			}
+			process_cmd(cmd);
 		}
 		if(!feof(file) && DEBUG){ 
 			// if an only if the DEBUG is true and cntrl+d is not pressed, run the debug()
@@ -383,4 +260,183 @@ int process(FILE* file){
 	}
 	
 	return EXIT_SUCCESS; 
+}
+
+
+int process_cmd(char* cmd){
+	// this function taes the input from scanf and processes it. Does the string comparison 
+	// and calls the respective function for the operation. 
+
+
+	datum input; // a datum which will be manipulated based on what was entered and then will be pushed
+	float value; 
+	if (sscanf(cmd, "%f", &value) != 0) 
+	{
+		// If the input is float, then change the input.tag to FLOAT and make its value to the input
+		input.tag = FLOAT;
+		input.f = value;		
+		push(input);
+		// if(DEBUG){
+		// 	debug();
+		// }		
+	}
+	else if (strcmp(cmd, "true") == 0)
+	{
+		// If the input is true, then change the input.tag to BOOL and make its value to true
+		input.tag = BOOL;
+		input.b = true;
+		push(input);
+		// if(DEBUG){
+		// 	debug();
+		// }					
+	}
+	else if (strcmp(cmd, "false") ==0)
+	{
+		// If the input is false, then change the input.tag to BOOL and make its value to false
+		input.tag = BOOL;
+		input.b = false;
+		push(input);
+		// if(DEBUG){
+		// 	debug();
+		// }					
+	}
+	else if (cmd[0] == '.' && cmd[1] == '"' && cmd[strlen(cmd)-1] == '"'){
+		// If the input has the first character as . and second character as " and the last character as "
+		// Then that's a string 
+		input.tag = STRING;
+		int START_IDX = 2; 
+		// Call the substring() function that would remove the delimiters and return a datum 
+		push(substring(cmd,START_IDX, strlen(cmd)-2));
+		// if(DEBUG){
+		// 	debug();
+		// }					
+	}
+	else
+	{
+		// If the input is any of the special operations, then 
+		// Simply call the functions for the corrosponding input
+		if ((strcmp(cmd, "rot")==0)){rot();}
+		else if (strcmp(cmd, "dup")==0){dup();}
+		else if(strcmp(cmd, "drop")==0){drop();}
+		else if (strcmp(cmd, "swap")==0){swap();}
+		else if (strcmp(cmd, "substring") ==0){
+			// Since the function substring accepts three arguments, 
+			// Save the three datums by popping them off and providing
+			// the function with the arguments. 
+			datum end = pop();
+			datum start = pop();
+			datum str = pop(); 
+			// The substring function will slice a string and return a datum with a string
+			// that has character from str[start] to str[end] inclusive 
+			push(substring(str.s, start.f, end.f));}
+		// else if cmd matches with any of the known commands, then call the corrosponding function:
+		else if(strcmp(cmd, "space") ==0){push(space());}
+		else if (strcmp(cmd, "newline") ==0){push(newline());}
+		else if (0== strcmp(cmd, "not")){not_op();}
+		else if(0 == strcmp(cmd, "and")){and_op();}
+		else if(0== strcmp(cmd, "or")){or_op();}
+		else if(0== strcmp(cmd, "=")){equality();}
+		else if(0== strcmp(cmd, "<>")){inequality();}
+		else if(0 == strcmp(cmd, "<")){lessThan();}
+		else if(0 == strcmp(cmd, "<=")){lessThanEqual();}
+		else if(0 == strcmp(cmd, ">")){greaterThan();}
+		else if(0 == strcmp(cmd, ">=")){greaterThanEqual();}
+		// if the cmd was constant or variable
+		else if(0 == strcmp(cmd, "constant") || 0 == strcmp(cmd, "variable"))
+		{
+			// first lookup in the dict
+			if(-1 == lookup()) // if not found in the dict
+			{store_const_or_var(cmd);} // store it in the dict
+
+			else if(lookup() == CONSTANT) //if found in the dict to be CONSTANT, print this msg
+			{printf("Constant name previously defined. A Constant cannot be overwritten!\n");}
+			
+			else if (lookup() == VARIABLE) { //if found in the dict to be VARIABLE, print this msg
+				printf("Variable name previously defined. To overwrite the value, use the 'set' operation\n");
+				}
+		}
+		else if(0 == strcmp(cmd, "set")){
+			set(); // call set function
+		} 
+		else if ((strcmp(cmd, "+") == 0 || strcmp(cmd, "-") == 0) || strcmp(cmd, "*") == 0 || strcmp(cmd, "/") == 0 || strcmp(cmd, "^") == 0 || strcmp(cmd, "fix") == 0){
+			operations(); // call the operation function to perform operations
+		}
+		else if(dict_retrieve(cmd)){
+			; // do nothing as the function dict_retrieve will look up the name and if found, it will push the value of the dict on to the stack
+
+		}
+		else if(0==strcmp("if", cmd)){
+			if(!empty()){
+				datum d = pop();
+				if(BOOL == d.tag){
+					process_until("else", d.b);
+					process_until("then", !d.b);
+				}
+				else{
+					printf("Not a bool!\n");
+					// return EXIT_FAILURE
+				}
+			}
+		}
+		else if(0==strcmp("else", cmd) || 0 == strcmp("then", cmd)){
+			;  // this is to make sure if the user typed something wrong on the top of the stack 
+			// that it does not print "Unrecognised op 'else' or 'then'"
+		}
+		else if (strcmp(cmd, ".")==0)
+		// If the input is .
+		{
+			if(!empty()){ 
+				
+				datum pop_datum = pop();
+				// Determine the tag of data type on the top of stack
+				switch(pop_datum.tag)
+				{
+					// Print the values correctly for the corrosponding data types. 
+					case BOOL: printf("%s\n", pop_datum.b ? "true" : "false"); break;
+					case FLOAT: printf("%0.*f\n", precision ,pop_datum.f); break;
+					case STRING: printf("%s\n", pop_datum.s); break;
+					default: assert(false); break;
+				}
+			}
+
+			else{
+				printf("Stack Underflow\n"); // if the stack is empty and a . is recognized, print this
+			}
+			
+		}
+		else
+		{
+			// if an unknown command has entered, print this: 
+			printf("USER_ERROR: unrecognized op '%s'\n", cmd);
+		}
+		
+
+
+	}
+	return EXIT_SUCCESS;
+}
+
+
+int process_until(const char* term, bool exec){
+	while(!feof(stdin)){
+		if (1==fscanf(stdin, "%s", cmd)){
+			if(0==(strcmp(term, cmd))){
+				return EXIT_SUCCESS;
+			}
+			else{
+				if (exec){
+					process_cmd(cmd);
+				}
+				else{
+					if(0==strcmp(cmd, "if")){
+						process_until("then", false);
+					}
+				}
+			}
+		}
+		else{
+			return EXIT_FAILURE;
+		}
+	}
+	return EXIT_FAILURE;
 }

@@ -1,10 +1,6 @@
-#include <cstdlib>
-#include <cstdio>
-#include <cassert>
 #include "dict.h"
 
 
-// const int size = 80;
 datum the_stack[SIZE+1];
 int top = -1;
 

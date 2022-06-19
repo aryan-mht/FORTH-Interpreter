@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include "stack.h" 
 
-
 // Initializing a dict_tag to identify the dict type
 enum dict_tag {CONSTANT, VARIABLE};
 
